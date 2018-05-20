@@ -66,7 +66,7 @@ enum cam_isp_hw_stop_cmd {
  *
  */
 struct cam_isp_stop_hw_method {
-	enum cam_isp_hw_stop_cmd      hw_stop_cmd;
+	uint32_t      hw_stop_cmd;
 };
 
 /**
