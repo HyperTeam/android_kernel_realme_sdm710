@@ -5876,7 +5876,7 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 
 	#ifdef VENDOR_EDIT
 	/*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/01/10, Add for set defaut state with dmic data pin */
-	if ((pdata->snd_card_val == INT_SND_CARD)) {
+	if (pdata->snd_card_val == INT_SND_CARD) {
 		if (msm_cdc_pinctrl_select_sleep_state(pdata->dmic_gpio_p)) {
 			pr_err("%s: set dmic data pin high-z state error\n", __func__);
 		}
