@@ -1442,8 +1442,8 @@ int cam_jpeg_hw_mgr_init(struct device_node *of_node, uint64_t *hw_mgr_hdl)
 		g_jpeg_hw_mgr.cdm_iommu_hdl;
 	g_jpeg_hw_mgr.jpeg_caps.cdm_iommu_handle.secure =
 		g_jpeg_hw_mgr.cdm_iommu_hdl_secure;
-	g_jpeg_hw_mgr.jpeg_caps.num_enc = num_dev;
-	g_jpeg_hw_mgr.jpeg_caps.num_dma = num_dma_dev;
+	g_jpeg_hw_mgr.jpeg_caps.num_enc = num_dev = 0;
+	g_jpeg_hw_mgr.jpeg_caps.num_dma = num_dma_dev = 0;
 	g_jpeg_hw_mgr.jpeg_caps.dev_ver[CAM_JPEG_DEV_ENC].hw_ver.major = 4;
 	g_jpeg_hw_mgr.jpeg_caps.dev_ver[CAM_JPEG_DEV_ENC].hw_ver.minor = 2;
 	g_jpeg_hw_mgr.jpeg_caps.dev_ver[CAM_JPEG_DEV_ENC].hw_ver.incr  = 0;

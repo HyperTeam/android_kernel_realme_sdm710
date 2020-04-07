@@ -2929,18 +2929,23 @@ enum Tfa98xx_Error tfaRunStartup(Tfa98xx_handle_t handle, int profile)
             msleep_interruptible(10); /* wait 10ms to avoid busload */
     }
     if (tries == CFSTABLE_TRIES) {
-        if (tfa98xx_runtime_verbose) pr_debug("Timed out\n");
+        if (tfa98xx_runtime_verbose) {
+        pr_debug("Timed out\n");
         return Tfa98xx_Error_StateTimedOut;
+        }
     }  else
-        if (tfa98xx_runtime_verbose) pr_debug(" OK (tries=%d)\n", tries);
+        if (tfa98xx_runtime_verbose) {
+        pr_debug(" OK (tries=%d)\n", tries);
 	#ifdef VENDOR_EDIT
 	/*Ping.Zhang@PSW.MM.AudioDriver.SmartPA, 2016/08/22, Add for current*/
 	status = TFA_GET_BF(handle, CLKS);
 	status1 = TFA_GET_BF(handle, PLLS);
 	pr_info("CLKS:%d,PLLS:%d\n",status,status1);
 	#endif /* VENDOR_EDIT */
-    if (tfa98xx_runtime_verbose && tfa98xx_dev_family(handle) == 2)
+        }
+    if (tfa98xx_runtime_verbose && tfa98xx_dev_family(handle) == 2) {
         err = show_current_state(handle);
+    }
 
     return err;
 }

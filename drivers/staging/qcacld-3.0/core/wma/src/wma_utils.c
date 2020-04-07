@@ -4657,7 +4657,7 @@ static void wma_set_roam_offload_flag(tp_wma_handle wma, uint8_t vdev_id,
 	 * does channel map based partial scan or partial scan followed
 	 * by full scan in case no candidate is found in partial scan.
 	 */
-	if (wma->bmiss_skip_full_scan)
+	if (wma->bmiss_skip_full_scan) {
 		flag |= WMI_ROAM_BMISS_FINAL_SCAN_TYPE_FLAG;
 
 		/*
@@ -4666,8 +4666,10 @@ static void wma_set_roam_offload_flag(tp_wma_handle wma, uint8_t vdev_id,
 		 */
 		mac_ctx = (tpAniSirGlobal)cds_get_context(QDF_MODULE_ID_PE);
 		if (mac_ctx &&
-		    mac_ctx->roam.configParam.disable_4way_hs_offload)
+		    mac_ctx->roam.configParam.disable_4way_hs_offload) {
 			flag |= WMI_VDEV_PARAM_SKIP_ROAM_EAPOL_4WAY_HANDSHAKE;
+		}
+	}
 	}
 
 	wma_debug("vdev_id:%d, is_set:%d, flag:%d", vdev_id, is_set, flag);
