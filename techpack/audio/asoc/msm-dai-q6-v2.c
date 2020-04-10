@@ -2318,7 +2318,12 @@ static int msm_dai_q6_afe_enc_cfg_get(struct snd_kcontrol *kcontrol,
 		case ENC_FMT_AAC_V2:
 			memcpy(ucontrol->value.bytes.data + format_size,
 				&dai_data->enc_config.data,
+				#ifndef VENDOR_EDIT
+				//Nan.Zhong@PSW.MM.AudioDriver.Machine, 2019/09/25, Modify for CR#2500290 & CR#2345250
 				sizeof(struct asm_aac_enc_cfg_v2_t));
+				#else /* VENDOR_EDIT */
+				sizeof(struct asm_aac_enc_cfg_t));
+				#endif /* VENDOR_EDIT */
 			break;
 		case ENC_FMT_APTX:
 			memcpy(ucontrol->value.bytes.data + format_size,
@@ -2376,7 +2381,12 @@ static int msm_dai_q6_afe_enc_cfg_put(struct snd_kcontrol *kcontrol,
 		case ENC_FMT_AAC_V2:
 			memcpy(&dai_data->enc_config.data,
 				ucontrol->value.bytes.data + format_size,
+				#ifndef VENDOR_EDIT
+				//Nan.Zhong@PSW.MM.AudioDriver.Machine, 2019/09/25, Modify for CR#2500290 & CR#2345250
 				sizeof(struct asm_aac_enc_cfg_v2_t));
+				#else /* VENDOR_EDIT */
+				sizeof(struct asm_aac_enc_cfg_t));
+				#endif /* VENDOR_EDIT */
 			break;
 		case ENC_FMT_APTX:
 			memcpy(&dai_data->enc_config.data,

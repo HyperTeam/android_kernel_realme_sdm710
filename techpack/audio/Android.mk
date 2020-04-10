@@ -21,6 +21,7 @@ include $(MY_LOCAL_PATH)/dsp/codecs/Android.mk
 include $(MY_LOCAL_PATH)/soc/Android.mk
 include $(MY_LOCAL_PATH)/asoc/Android.mk
 include $(MY_LOCAL_PATH)/asoc/codecs/Android.mk
+include $(MY_LOCAL_PATH)/asoc/codecs/tfa98xx/Android.mk
 include $(MY_LOCAL_PATH)/asoc/codecs/wcd934x/Android.mk
 endif
 
@@ -35,3 +36,18 @@ $(shell rm -rf $(PRODUCT_OUT)/obj/vendor/qcom/opensource/audio-kernel/asoc/codec
 include $(MY_LOCAL_PATH)/asoc/codecs/sdm660_cdc/Android.mk
 include $(MY_LOCAL_PATH)/asoc/codecs/msm_sdw/Android.mk
 endif
+
+#ifdef VENDOR_EDIT
+#Kaiqin.Huang@RM.MM.AudioDriver.Codec, 2019/10/12, Add for tfa9890 codec
+include $(MY_LOCAL_PATH)/asoc/codecs/tfa98xx/Android.mk
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+#Kaiqin.Huang@PSW.MM.AudioDriver.Codec, 2019/09/27, Remove ak43xx codec
+#include $(MY_LOCAL_PATH)/asoc/codecs/ak4376/Android.mk
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+#Kaiqin.Huang@PSW.MM.AudioDriver.Codec, 2019/09/27, Remove dbmdx
+#include $(MY_LOCAL_PATH)/asoc/codecs/dbmdx/Android.mk
+#endif /* VENDOR_EDIT */

@@ -138,18 +138,43 @@ do {                                                    \
 				  SND_JACK_BTN_2 | SND_JACK_BTN_3 | \
 				  SND_JACK_BTN_4 | SND_JACK_BTN_5)
 #define OCP_ATTEMPT 20
+#ifndef VENDOR_EDIT
+/*Jianfeng.Qiu@PSW.MM.AudioDriver.HeadsetDet, 2017/04/10,
+ *Modify for headphone detect.
+ */
 #define HS_DETECT_PLUG_TIME_MS (3 * 1000)
+#else /* VENDOR_EDIT */
+#define HS_DETECT_PLUG_TIME_MS (5 * 1000)
+#endif /* VENDOR_EDIT */
 #define SPECIAL_HS_DETECT_TIME_MS (2 * 1000)
 #define MBHC_BUTTON_PRESS_THRESHOLD_MIN 250
+#ifndef VENDOR_EDIT
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/29, Add for usb type-c audio */
 #define GND_MIC_SWAP_THRESHOLD 4
 #define GND_MIC_USBC_SWAP_THRESHOLD 2
+#else /* VENDOR_EDIT */
+#ifdef USB_SWITCH_MAX20328
+#define GND_MIC_SWAP_THRESHOLD 1
+#define GND_MIC_USBC_SWAP_THRESHOLD 1
+#else
+#define GND_MIC_SWAP_THRESHOLD 4
+#define GND_MIC_USBC_SWAP_THRESHOLD 2
+#endif //USB_SWITCH_MAX20328
+#endif /* VENDOR_EDIT */
 #define WCD_FAKE_REMOVAL_MIN_PERIOD_MS 100
 #define HS_VREF_MIN_VAL 1400
 #define FW_READ_ATTEMPTS 15
 #define FW_READ_TIMEOUT 4000000
 #define FAKE_REM_RETRY_ATTEMPTS 3
 #define MAX_IMPED 60000
-
+#ifdef VENDOR_EDIT
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/06/29, Add for usb type-c audio */
+#ifdef USB_SWITCH_MAX20328
+#define HP_DETECT_WORK_DELAY_MS 50
+#else
+#define HP_DETECT_WORK_DELAY_MS 400
+#endif
+#endif /* VENDOR_EDIT */
 #define WCD_MBHC_BTN_PRESS_COMPL_TIMEOUT_MS  50
 #define ANC_DETECT_RETRY_CNT 7
 #define WCD_MBHC_SPL_HS_CNT  1
@@ -456,6 +481,12 @@ struct wcd_mbhc_cb {
 	void (*trim_btn_reg)(struct snd_soc_codec *);
 	void (*compute_impedance)(struct wcd_mbhc *, uint32_t *, uint32_t *);
 	void (*set_micbias_value)(struct snd_soc_codec *);
+	#ifdef VENDOR_EDIT
+	/*Jianfeng.Qiu@PSW.MM.AudioDriver.Codec, 2018/07/31,
+	 *Add for set different micbias voltage.
+	 */
+	void (*set_micbias_value_switch)(struct snd_soc_codec *, u32);
+	#endif /* VENDOR_EDIT */
 	void (*set_auto_zeroing)(struct snd_soc_codec *, bool);
 	struct firmware_cal * (*get_hwdep_fw_cal)(struct wcd_mbhc *,
 			enum wcd_cal_type);
@@ -568,6 +599,12 @@ struct wcd_mbhc {
 
 	/* Work to correct accessory type */
 	struct work_struct correct_plug_swch;
+	#ifdef VENDOR_EDIT
+	/*xiang.fei@PSW.MM.AudioDriver.HeadsetDet, 2017/04/15,
+	 *Add for headset detect.
+	 */
+	struct delayed_work hp_detect_work;
+	#endif /* VENDOR_EDIT */
 	struct notifier_block nblock;
 
 	struct wcd_mbhc_register *wcd_mbhc_regs;
@@ -591,6 +628,37 @@ struct wcd_mbhc {
 	struct wcd_mbhc_fn *mbhc_fn;
 	bool force_linein;
 };
+
+#ifdef VENDOR_EDIT
+/* Huiqun.Han@PSW.MM.AudioDriver.Machine, 2018/09/03, Add for usb type-c audio */
+#ifdef USB_SWITCH_MAX20328
+#define POWER_SUPPLY_TYPEC_USBMODE 1
+#define POWER_SUPPLY_TYPEC_OFF 0
+extern int msm_usb_register_client(struct notifier_block *nb);
+extern int msm_usb_unregister_client(struct notifier_block *nb);
+extern int max20328_set_switch_mode(int mode);
+extern int ak4376_HPLR_HZ(bool HPLR_HZ);
+enum wcd_mbhc_headset_type {
+	MBHC_HEADSET_INVALID = -1,
+	MBHC_HEADSET_NONE,
+	MBHC_HEADSET_NORMAL,
+	MBHC_HEADSET_SELFI_STICKER,
+};
+typedef enum {
+	AUDIO_SWITCH_MODE_USB = 0,
+	AUDIO_SWITCH_MODE_AUDIO = 1,
+	AUDIO_SWITCH_MODE_OFF = 2,
+} usbc_switch_mode_t;
+
+struct mbhc_usb_c_analog_switch {
+	struct notifier_block usb_state_nb;
+	struct work_struct usbc_analog_gpio_work;
+	usbc_switch_mode_t usbc_switch_mode;
+	usbc_switch_mode_t usbc_switch_mode_request;
+	struct wcd_mbhc *mbhc;
+};
+#endif
+#endif /* VENDOR_EDIT */
 
 void wcd_mbhc_find_plug_and_report(struct wcd_mbhc *mbhc,
 				   enum wcd_mbhc_plug_type plug_type);

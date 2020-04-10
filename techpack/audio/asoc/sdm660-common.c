@@ -26,6 +26,13 @@
 #include "codecs/sdm660_cdc/msm-analog-cdc.h"
 #include "codecs/wsa881x.h"
 
+#ifdef VENDOR_EDIT
+#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+#include <asoc/oppo_mm_audio_kevent.h>
+#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+#endif /* VENDOR_EDIT */
+
 #define __CHIPSET__ "SDM660 "
 #define MSM_DAILINK_NAME(name) (__CHIPSET__#name)
 
@@ -249,7 +256,14 @@ static bool msm_swap_gnd_mic(struct snd_soc_codec *codec, bool active);
 static struct wcd_mbhc_config mbhc_cfg = {
 	.read_fw_bin = false,
 	.calibration = NULL,
+	#ifndef VENDOR_EDIT
+	/* Jianfeng.Qiu@PSW.MM.AudioDriver.HeadsetDet, 2017/04/10,
+	 * Modify for headset detect.
+	 */
 	.detect_extn_cable = true,
+	#else /* VENDOR_EDIT */
+	.detect_extn_cable = false,
+	#endif /* VENDOR_EDIT */
 	.mono_stero_detection = false,
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = true,
@@ -4872,6 +4886,12 @@ int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 	int port_id = msm_get_port_id(rtd->dai_link->id);
 	int index = cpu_dai->id;
 	unsigned int fmt = SND_SOC_DAIFMT_CBS_CFS;
+	#ifdef VENDOR_EDIT
+	#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+	/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+	unsigned char payload[256] = "";
+	#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+	#endif /* VENDOR_EDIT */
 	struct msm_asoc_mach_data *pdata =
 				snd_soc_card_get_drvdata(rtd->card);
 
@@ -4913,6 +4933,17 @@ int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 				__func__, index, ret);
 			goto clk_off;
 		}
+		#ifdef VENDOR_EDIT
+		/*Jianfeng.Qiu@PSW.MM.AudioDriver.FTM.1396163, 2018/05/27,
+		 *Add for FTM mode ak4376 pdn not pulldown, cause sleep current issue.
+		 */
+		if (index == SEC_MI2S) {
+			ret = snd_soc_dai_set_fmt(rtd->codec_dai, fmt|SND_SOC_DAIFMT_I2S);
+			if (ret < 0) {
+				pr_warn("%s: set codec fmt fail, ret=%d \n", __func__, ret);
+			}
+		}
+		#endif /* VENDOR_EDIT */
 		if (mi2s_intf_conf[index].msm_is_ext_mclk) {
 			mi2s_mclk[index].enable = 1;
 			pr_debug("%s: Enabling mclk, clk_freq_in_hz = %u\n",
@@ -4922,6 +4953,14 @@ int msm_mi2s_snd_startup(struct snd_pcm_substream *substream)
 			if (ret < 0) {
 				pr_err("%s: afe lpass mclk failed, err:%d\n",
 					__func__, ret);
+				#ifdef VENDOR_EDIT
+				#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+				/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+				scnprintf(payload, sizeof(payload), "NULL$$EventID@@%d$$mi2s_set_clk_fail$$index@@%d$$path@@%d$$err@@%d",
+					OPPO_MM_AUDIO_EVENT_ID_CLK_FAIL, index, substream->stream, ret);
+				upload_mm_audio_kevent_data(payload);
+				#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+				#endif /* VENDOR_EDIT */
 				goto clk_off;
 			}
 		}
@@ -5686,6 +5725,11 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	const char *usb_c_dt = "qcom,msm-mbhc-usbc-audio-supported";
 
+	#ifdef VENDOR_EDIT
+	/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine,2017/09/21, Add for log*/
+	pr_info("%s: *** Enter\n", __func__);
+	#endif /* VENDOR_EDIT */
+
 	pdata = devm_kzalloc(&pdev->dev,
 			     sizeof(struct msm_asoc_mach_data),
 			     GFP_KERNEL);
@@ -5823,6 +5867,21 @@ static int msm_asoc_machine_probe(struct platform_device *pdev)
 	}
 	if (pdata->snd_card_val > INT_MAX_SND_CARD)
 		msm_ext_register_audio_notifier(pdev);
+
+
+	#ifdef VENDOR_EDIT
+	/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine,2017/09/21, Add for log*/
+	pr_info("%s: sond card register success.\n", __func__);
+	#endif /* VENDOR_EDIT */
+
+	#ifdef VENDOR_EDIT
+	/*xiang.fei@PSW.MM.AudioDriver.Codec, 2019/01/10, Add for set defaut state with dmic data pin */
+	if ((pdata->snd_card_val == INT_SND_CARD)) {
+		if (msm_cdc_pinctrl_select_sleep_state(pdata->dmic_gpio_p)) {
+			pr_err("%s: set dmic data pin high-z state error\n", __func__);
+		}
+	}
+	#endif /* VENDOR_EDIT */
 
 	return 0;
 err:
