@@ -3251,6 +3251,15 @@ struct aptx_channel_mode_param_t {
  */
 #define AFE_SB_DATA_FORMAT_GENERIC_COMPRESSED    0x3
 
+#ifdef VENDOR_EDIT
+//Nan.Zhong@PSW.MM.AudioDriver.Machine, 2019/09/25, Add for CR#2500290 & CR#2345250
+ /*
+  * Parameter to send frame control size
+  * to DSP for AAC encoder in AFE.
+  */
+#define AFE_PARAM_ID_AAC_FRM_SIZE_CONTROL 0x000132EA
+#endif /* VENDOR_EDIT */
+
 /*
  * Parameter to send frame control size
  * to DSP for AAC encoder in AFE.
