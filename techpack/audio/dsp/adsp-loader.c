@@ -24,6 +24,13 @@
 
 #include <soc/qcom/subsystem_restart.h>
 
+#ifdef VENDOR_EDIT
+#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+#include <asoc/oppo_mm_audio_kevent.h>
+#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+#endif /* VENDOR_EDIT */
+
 #define Q6_PIL_GET_DELAY_MS 100
 #define BOOT_CMD 1
 #define IMAGE_UNLOAD_CMD 0
@@ -54,11 +61,21 @@ static void adsp_load_fw(struct work_struct *adsp_ldr_work)
 {
 	struct platform_device *pdev = adsp_private;
 	struct adsp_loader_private *priv = NULL;
+	#ifdef VENDOR_EDIT
+	#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+	/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+	unsigned char payload[64] = "";
+	#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+	#endif /* VENDOR_EDIT */
 
 	const char *adsp_dt = "qcom,adsp-state";
 	int rc = 0;
 	u32 adsp_state;
 	const char *img_name;
+#ifdef VENDOR_EDIT
+//zhye@BSP.Sensor, 2019-06-10, add for multi adsp fw load
+	const char *adsp_img;
+#endif
 
 	if (!pdev) {
 		dev_err(&pdev->dev, "%s: Platform device null\n", __func__);
@@ -127,11 +144,34 @@ load_adsp:
 				" %s: Private data get failed\n", __func__);
 				goto fail;
 			}
+#ifdef VENDOR_EDIT
+//zhye@BSP.Sensor, 2019-06-10, add for multi adsp fw load
+			rc = of_property_read_string(pdev->dev.of_node,
+							"adsp-firmware",
+							&adsp_img);
+			if (rc) {
+				dev_dbg(&pdev->dev,
+					"%s: loading default image ADSP\n", __func__);
+				adsp_img = NULL;
+			}
+			else
+				dev_err(&pdev->dev, "%s: adsp-firmware = %s\n",__func__, adsp_img);
 
+			priv->pil_h = subsystem_get_with_fwname("adsp", adsp_img);
+#else//VENDOR_EDIT
 			priv->pil_h = subsystem_get("adsp");
+#endif//VENDOR_EDIT
 			if (IS_ERR(priv->pil_h)) {
 				dev_err(&pdev->dev, "%s: pil get failed,\n",
 					__func__);
+				#ifdef VENDOR_EDIT
+				#ifdef CONFIG_OPPO_KEVENT_UPLOAD
+				/*Jianfeng.Qiu@PSW.MM.AudioDriver.Stability, 2019/02/03, Add for audio driver kevent log*/
+				scnprintf(payload, sizeof(payload), "NULL$$EventID@@%d$$adsp_fw_get_fail",
+					OPPO_MM_AUDIO_EVENT_ID_ADSP_FW_FAIL);
+				upload_mm_audio_kevent_data(payload);
+				#endif /* CONFIG_OPPO_KEVENT_UPLOAD */
+				#endif /* VENDOR_EDIT */
 				goto fail;
 			}
 
