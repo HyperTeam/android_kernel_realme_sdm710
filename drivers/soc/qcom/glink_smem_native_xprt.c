@@ -1580,7 +1580,9 @@ static void subsys_up(struct glink_transport_if *if_ptr)
 	bool ret = false;
 
 	einfo = container_of(if_ptr, struct edge_info, xprt_if);
+#ifndef VENDOR_EDIT
 	einfo->in_ssr = false;
+#endif
 	spin_lock_irqsave(&einfo->rx_lock, flags);
 	if (!einfo->rx_fifo) {
 		ret = get_rx_fifo(einfo);
@@ -1590,6 +1592,9 @@ static void subsys_up(struct glink_transport_if *if_ptr)
 		}
 	}
 	spin_unlock_irqrestore(&einfo->rx_lock, flags);
+#ifdef VENDOR_EDIT
+	einfo->in_ssr = false;
+#endif
 	if (ret)
 		einfo->xprt_if.glink_core_if_ptr->link_up(&einfo->xprt_if);
 }
@@ -2573,6 +2578,7 @@ static int glink_smem_native_probe(struct platform_device *pdev)
 	}
 
 	einfo->irq_line = irq_line;
+	einfo->in_ssr = true;
 	rc = request_irq(irq_line, irq_handler,
 			IRQF_TRIGGER_RISING | IRQF_SHARED,
 			node->name, einfo);
@@ -2581,7 +2587,6 @@ static int glink_smem_native_probe(struct platform_device *pdev)
 									rc);
 		goto request_irq_fail;
 	}
-	einfo->in_ssr = true;
 	rc = enable_irq_wake(irq_line);
 	if (rc < 0)
 		pr_err("%s: enable_irq_wake() failed on %d\n", __func__,
