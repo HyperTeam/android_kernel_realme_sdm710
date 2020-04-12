@@ -59,11 +59,15 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S7_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
-		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&qupv3_se7_4uart_active>;
-		pinctrl-1 = <&qupv3_se7_4uart_sleep>;
-		interrupts-extended = <&pdc GIC_SPI 608 0>,
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "default", "sleep";
+		//pinctrl-0 = <&qupv3_se7_4uart_active>;
+		//pinctrl-1 = <&qupv3_se7_4uart_sleep>;
+//#endif /* VENDOR_EDIT */
+	/*	interrupts-extended = <&pdc GIC_SPI 608 0>,
 				<&tlmm 96 0>;
+        */
 		status = "disabled";
 		qcom,wakeup-byte = <0xFD>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -167,7 +171,12 @@
 		pinctrl-0 = <&qupv3_se4_i2c_active>;
 		pinctrl-1 = <&qupv3_se4_i2c_sleep>;
 		qcom,wrapper-core = <&qupv3_0>;
-		status = "disabled";
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/10/26, Add for audio driver*/
+		//status = "disabled";
+		/* #else  VENDOR_EDIT */
+		status = "ok";
+		/* #endif VENDOR_EDIT */
 	};
 
 	qupv3_se5_i2c: i2c@894000 {
@@ -329,9 +338,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S4_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/10/26, Delete for audio driver*/
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se4_spi_active>;
 		pinctrl-1 = <&qupv3_se4_spi_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 605 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -395,9 +409,12 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP0_S7_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_0_S_AHB_CLK>;
-		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&qupv3_se7_spi_active>;
-		pinctrl-1 = <&qupv3_se7_spi_sleep>;
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "default", "sleep";
+		//pinctrl-0 = <&qupv3_se7_spi_active>;
+		//pinctrl-1 = <&qupv3_se7_spi_sleep>;
+//#endif /* VENDOR_EDIT */
 		interrupts = <GIC_SPI 608 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_0>;
@@ -568,9 +585,14 @@
 		dmas = <&gpi_dma1 0 4 3 64 0>,
 			<&gpi_dma1 1 4 3 64 0>;
 		dma-names = "tx", "rx";
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/10/26, Delete for audio gpio50*/
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se12_i2c_active>;
 		pinctrl-1 = <&qupv3_se12_i2c_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		qcom,wrapper-core = <&qupv3_1>;
 		status = "disabled";
 	};
@@ -734,9 +756,14 @@
 		clocks = <&clock_gcc GCC_QUPV3_WRAP1_S4_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_M_AHB_CLK>,
 			<&clock_gcc GCC_QUPV3_WRAP_1_S_AHB_CLK>;
+		/* #ifndef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Machine, 2018/10/26, Delete for audio use gpio50*/
+		/*
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&qupv3_se12_spi_active>;
 		pinctrl-1 = <&qupv3_se12_spi_sleep>;
+		*/
+		/* #endif VENDOR_EDIT */
 		interrupts = <GIC_SPI 357 0>;
 		spi-max-frequency = <50000000>;
 		qcom,wrapper-core = <&qupv3_1>;

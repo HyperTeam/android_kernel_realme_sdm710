@@ -66,7 +66,10 @@
 		regulator-max-microvolt = <1200000>;
 		regulator-enable-ramp-delay = <233>;
 		enable-active-high;
-		gpio = <&pm660l_gpios 4 0>;
+		/* #ifndef VENDOR_EDIT */
+		/* wenjie.Liu@PSW.CN.NFC.BASIC.Hardware.1084025,Delete for NFC use this gpio 2018/4/02*/
+		//gpio = <&pm660l_gpios 4 0>;
+		/* #endif VENDOR_EDIT */
 		vin-supply = <&pm660_s6>;
 	};
 
@@ -102,39 +105,45 @@
 		regulator-max-microvolt = <1200000>;
 		regulator-enable-ramp-delay = <233>;
 		enable-active-high;
-		gpio = <&pm660l_gpios 3 0>;
+		/* #ifndef VENDOR_EDIT */
+		/* wenjie.Liu@PSW.CN.NFC.BASIC.Hardware.1084025,Delete for NFC use this gpio 2018/4/02*/
+		//gpio = <&pm660l_gpios 3 0>;
+		/* #endif VENDOR_EDIT */
 		vin-supply = <&pm660_s6>;
 	};
 };
 
 &tlmm {
-	cam_sensor_rear_active: cam_sensor_rear_active {
-		/* RESET */
-		mux {
-			pins = "gpio30";
-			function = "gpio";
-		};
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+	//cam_sensor_rear_active: cam_sensor_rear_active {
+	//	/* RESET */
+	//	mux {
+	//		pins = "gpio30";
+	//		function = "gpio";
+	//	};
 
-		config {
-			pins = "gpio30";
-			bias-disable; /* No PULL */
-			drive-strength = <2>; /* 2 MA */
-		};
-	};
+	//	config {
+	//		pins = "gpio30";
+	//		bias-disable; /* No PULL */
+	//		drive-strength = <2>; /* 2 MA */
+	//	};
+	//};
 
-	cam_sensor_rear_suspend: cam_sensor_rear_suspend {
-		/* RESET */
-		mux {
-			pins = "gpio30";
-			function = "gpio";
-		};
+	//cam_sensor_rear_suspend: cam_sensor_rear_suspend {
+	//	/* RESET */
+	//	mux {
+	//		pins = "gpio30";
+	//		function = "gpio";
+	//	};
 
-		config {
-			pins = "gpio30";
-			bias-disable; /* No PULL */
-			drive-strength = <2>; /* 2 MA */
-		};
-	};
+	//	config {
+	//		pins = "gpio30";
+	//		bias-disable; /* No PULL */
+	//		drive-strength = <2>; /* 2 MA */
+	//	};
+	//};
+//#endif /* VENDOR_EDIT */
 
 	cam_sensor_rear2_active: cam_sensor_rear2_active {
 		/* RESET */
@@ -164,33 +173,36 @@
 		};
 	};
 
-	cam_sensor_front_active: cam_sensor_front_active {
-		/* RESET */
-		mux {
-			pins = "gpio28";
-			function = "gpio";
-		};
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+	//cam_sensor_front_active: cam_sensor_front_active {
+	//	/* RESET */
+	//	mux {
+	//		pins = "gpio28";
+	//		function = "gpio";
+	//	};
 
-		config {
-			pins = "gpio28";
-			bias-disable; /* No PULL */
-			drive-strength = <2>; /* 2 MA */
-		};
-	};
+	//	config {
+	//		pins = "gpio28";
+	//		bias-disable; /* No PULL */
+	//		drive-strength = <2>; /* 2 MA */
+	//	};
+	//};
 
-	cam_sensor_front_suspend: cam_sensor_front_suspend {
-		/* RESET */
-		mux {
-			pins = "gpio28";
-			function = "gpio";
-		};
+	//cam_sensor_front_suspend: cam_sensor_front_suspend {
+	//	/* RESET */
+	//	mux {
+	//		pins = "gpio28";
+	//		function = "gpio";
+	//	};
 
-		config {
-			pins = "gpio28";
-			bias-disable; /* No PULL */
-			drive-strength = <2>; /* 2 MA */
-		};
-	};
+	//	config {
+	//		pins = "gpio28";
+	//		bias-disable; /* No PULL */
+	//		drive-strength = <2>; /* 2 MA */
+	//	};
+	//};
+//#endif /* VENDOR_EDIT */
 };
 
 &cam_cci {
@@ -254,13 +266,16 @@
 		rgltr-max-voltage = <1800000 2850000 1200000 0 2800000>;
 		rgltr-load-current = <0 80000 105000 0 0>;
 		gpio-no-mux = <0>;
-		pinctrl-names = "cam_default", "cam_suspend";
-		pinctrl-0 = <&cam_sensor_mclk0_active
-				&cam_sensor_rear_active>;
-		pinctrl-1 = <&cam_sensor_mclk0_suspend
-				&cam_sensor_rear_suspend>;
-		gpios = <&tlmm 13 0>,
-			<&tlmm 30 0>;
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "cam_default", "cam_suspend";
+		//pinctrl-0 = <&cam_sensor_mclk0_active
+		//		&cam_sensor_rear_active>;
+		//pinctrl-1 = <&cam_sensor_mclk0_suspend
+		//		&cam_sensor_rear_suspend>;
+		//gpios = <&tlmm 13 0>,
+		//	<&tlmm 30 0>;
+//#endif /* VENDOR_EDIT */
 		gpio-reset = <1>;
 		gpio-req-tbl-num = <0 1>;
 		gpio-req-tbl-flags = <1 0>;
@@ -292,13 +307,16 @@
 		rgltr-max-voltage = <1200000 1800000 2850000 0 2800000>;
 		rgltr-load-current = <105000 0 80000 0 0>;
 		gpio-no-mux = <0>;
-		pinctrl-names = "cam_default", "cam_suspend";
-		pinctrl-0 = <&cam_sensor_mclk1_active
-				 &cam_sensor_front_active>;
-		pinctrl-1 = <&cam_sensor_mclk1_suspend
-				 &cam_sensor_front_suspend>;
-		gpios = <&tlmm 14 0>,
-			<&tlmm 28 0>;
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "cam_default", "cam_suspend";
+		//pinctrl-0 = <&cam_sensor_mclk1_active
+		//		 &cam_sensor_front_active>;
+		//pinctrl-1 = <&cam_sensor_mclk1_suspend
+		//		 &cam_sensor_front_suspend>;
+		//gpios = <&tlmm 14 0>,
+		//	<&tlmm 28 0>;
+//#endif /* VENDOR_EDIT */
 		gpio-reset = <1>;
 		gpio-req-tbl-num = <0 1>;
 		gpio-req-tbl-flags = <1 0>;
@@ -374,13 +392,16 @@
 		rgltr-max-voltage = <1800000 2850000 1200000 0>;
 		rgltr-load-current = <0 80000 105000 0>;
 		gpio-no-mux = <0>;
-		pinctrl-names = "cam_default", "cam_suspend";
-		pinctrl-0 = <&cam_sensor_mclk0_active
-				&cam_sensor_rear_active>;
-		pinctrl-1 = <&cam_sensor_mclk0_suspend
-				&cam_sensor_rear_suspend>;
-		gpios = <&tlmm 13 0>,
-			<&tlmm 30 0>;
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "cam_default", "cam_suspend";
+		//pinctrl-0 = <&cam_sensor_mclk0_active
+		//		&cam_sensor_rear_active>;
+		//pinctrl-1 = <&cam_sensor_mclk0_suspend
+		//		&cam_sensor_rear_suspend>;
+		//gpios = <&tlmm 13 0>,
+		//	<&tlmm 30 0>;
+//#endif /* VENDOR_EDIT */
 		gpio-reset = <1>;
 		gpio-req-tbl-num = <0 1>;
 		gpio-req-tbl-flags = <1 0>;
@@ -417,13 +438,16 @@
 		rgltr-max-voltage = <1200000 1800000 2850000 0>;
 		rgltr-load-current = <105000 0 80000 0>;
 		gpio-no-mux = <0>;
-		pinctrl-names = "cam_default", "cam_suspend";
-		pinctrl-0 = <&cam_sensor_mclk1_active
-				&cam_sensor_front_active>;
-		pinctrl-1 = <&cam_sensor_mclk1_suspend
-				&cam_sensor_front_suspend>;
-		gpios = <&tlmm 14 0>,
-			<&tlmm 28 0>;
+//#ifdef VENDOR_EDIT
+//xiang.fei@PSW.MM.AudioDriver.Codec, 2018/10/29, Remove for dbmdx
+		//pinctrl-names = "cam_default", "cam_suspend";
+		//pinctrl-0 = <&cam_sensor_mclk1_active
+		//		&cam_sensor_front_active>;
+		//pinctrl-1 = <&cam_sensor_mclk1_suspend
+		//		&cam_sensor_front_suspend>;
+		//gpios = <&tlmm 14 0>,
+		//	<&tlmm 28 0>;
+//#endif /* VENDOR_EDIT */
 		gpio-reset = <1>;
 		gpio-req-tbl-num = <0 1>;
 		gpio-req-tbl-flags = <1 0>;
