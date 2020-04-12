@@ -32,4 +32,6 @@
 	qcom,pmic-id = <0x0001001b 0x0001011a 0x0 0x0>,
 		       <0x0001001b 0x0002001a 0x0 0x0>,
 		       <0x0001001b 0x0202001a 0x0 0x0>;
+	/*oppo,prjversion. first one is the count of projects*/
+	oppo,prjversion = <1 18621>;
 };

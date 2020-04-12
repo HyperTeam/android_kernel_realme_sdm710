@@ -12,12 +12,22 @@
 
 /* Disable WLED */
 &pm660l_wled {
-	status = "disabled";
+//#ifndef VENDOR_EDIT
+//caiwutang@MM.Display.LCD.featrue, 2019/03/29, Modify for WLED
+//	status = "disabled";
+//#else /* VENDOR_EDIT */
+	status = "okay";
+//#endif /* VENDOR_EDIT */
 };
 
 /* disable LCDB */
 &pm660l_lcdb {
-	status = "disabled";
+//#ifndef VENDOR_EDIT
+//caiwutang@MM.Display.LCD.featrue, 2019/03/29, Modify for WLED
+//	status = "disabled";
+//#else /* VENDOR_EDIT */
+	status = "okay";
+//#endif /* VENDOR_EDIT */
 };
 
 &pm660a_oledb {

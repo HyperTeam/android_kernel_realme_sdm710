@@ -402,6 +402,10 @@
 		status = "ok";
 		compatible = "qcom,adsp-loader";
 		qcom,adsp-state = <0>;
+//#ifdef VENDOR_EDIT
+//zhye@BSP.Sensor, 2019-06-10, add for multi adsp fw load
+		adsp-firmware = "adsp_v2";
+//#endif//VENDOR_EDIT
 	};
 
 	qcom,msm-dai-tdm-pri-rx {

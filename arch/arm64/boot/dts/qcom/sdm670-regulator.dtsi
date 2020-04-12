@@ -466,6 +466,27 @@
 		};
 	};
 
+	rpmh-regulator-ldoa18 {
+		compatible = "qcom,rpmh-vrm-regulator";
+		mboxes = <&apps_rsc 0>;
+		qcom,resource-name = "ldoa18";
+		qcom,regulator-type = "pmic4-ldo";
+		qcom,supported-modes =
+			<RPMH_REGULATOR_MODE_LPM
+			 RPMH_REGULATOR_MODE_HPM>;
+		qcom,mode-threshold-currents = <0 1>;
+		pm660_l18: regulator-pm660-l18 {
+			regulator-name = "pm660_l18";
+			qcom,set = <RPMH_REGULATOR_SET_ALL>;
+			regulator-min-microvolt = <2600000>;
+			regulator-max-microvolt = <2800000>;
+			qcom,init-voltage = <2700000>;
+			qcom,init-mode = <RPMH_REGULATOR_MODE_LPM>;
+                        regulator-boot-on;
+                        regulator-always-on;
+		};
+	};
+
 	rpmh-regulator-ldoa19 {
 		compatible = "qcom,rpmh-vrm-regulator";
 		mboxes = <&apps_rsc 0>;
