@@ -10,15 +10,18 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __SMB2_CHARGER_H
-#define __SMB2_CHARGER_H
+#ifndef __OPPO_BATTERY_SDM670Q_CHARGER_H
+#define __OPPO_BATTERY_SDM670Q_CHARGER_H
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/irqreturn.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/consumer.h>
 #include <linux/extcon.h>
-#include "storm-watch.h"
+#include "../../../../drivers/power/supply/qcom/storm-watch.h"
+#include "../../../../drivers/power/supply/qcom/smb-reg.h"
+#include "../../../../drivers/power/supply/qcom/battery.h"
+#include "../../../../drivers/power/supply/qcom/step-chg-jeita.h"
 
 enum print_reason {
 	PR_INTERRUPT	= BIT(0),
@@ -81,7 +84,6 @@ enum print_reason {
 #endif
 #define FG_ESR_VOTER			"FG_ESR_VOTER"
 #define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
-#define PD_NOT_SUPPORTED_VOTER		"PD_NOT_SUPPORTED_VOTER"
 
 #define VCONN_MAX_ATTEMPTS	3
 #define OTG_MAX_ATTEMPTS	3
@@ -379,7 +381,6 @@ struct smb_charger {
 	bool			disable_stat_sw_override;
 	bool			in_chg_lock;
 	bool			fcc_stepper_enable;
-	bool			ufp_only_mode;
 
 	/* workaround flag */
 	u32			wa_flags;
@@ -455,7 +456,6 @@ struct smb_dt_props {
 	bool	hvdcp_disable;
 	bool	auto_recharge_soc;
 	int	wd_bark_time;
-	bool	no_pd;
 };
 
 struct smb2 {
@@ -653,7 +653,6 @@ int smblib_set_prop_pr_swap_in_progress(struct smb_charger *chg,
 int smblib_stat_sw_override_cfg(struct smb_charger *chg, bool override);
 void smblib_usb_typec_change(struct smb_charger *chg);
 int smblib_toggle_stat(struct smb_charger *chg, int reset);
-int smblib_force_ufp(struct smb_charger *chg);
 #ifdef VENDOR_EDIT
 /* tongfeng.huang@BSP.CHG.Basic, 2018/04/23,  Add for using gpio as CC  detect */
 const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg);
