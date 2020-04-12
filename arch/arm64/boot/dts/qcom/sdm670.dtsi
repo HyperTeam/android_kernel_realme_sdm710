@@ -39,6 +39,10 @@
 		spi0 = &qupv3_se8_spi;
 		i2c0 = &qupv3_se10_i2c;
 		i2c1 = &qupv3_se3_i2c;
+		/* #ifdef VENDOR_EDIT */
+		/* Jianfeng.Qiu@PSW.MM.AudioDriver.Codec, 2018/07/05, Add for audio codec i2c */
+		i2c2 = &qupv3_se4_i2c;
+		/* #endif VENDOR_EDIT */
 		hsuart0 = &qupv3_se6_4uart;
 	};
 
@@ -452,20 +456,33 @@
 
 			vbmeta {
 				compatible = "android,vbmeta";
-				parts = "vbmeta,boot,system,vendor,dtbo";
+				// #ifdef VENDOR_EDIT
+				// #Wanghao@BSP.Bootloader.Bootflow, 2018/04/26, add to disable A/B partition
+				//add recovery
+				parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+				// #endif
 			};
 
+#ifndef CONFIG_DYNAMIC_PARTITION_ENABLE //#Haoran.Zhang@PSW.Tech.2221709,2019/08/07,reomve for logic vendor partition .todo,should use micro
 			fstab {
 				compatible = "android,fstab";
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/vendor";
 					type = "ext4";
-					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,slotselect,avb";
-					status = "ok";
+/*#if defined(VENDOR_EDIT) && defined(CONFIG_EXT4_ASYNC_DISCARD_SUPPORT)*/
+/*yh@PSW.BSP.Storage.EXT4, 2018-11-26 add for ext4 async discard suppot*/
+					mnt_flags = "ro,barrier=1,async_discard";
+/*#else*/
+					/*mnt_flags = "ro,barrier=1,discard";*/
+/*#endif*/
+					// #ifdef VENDOR_EDIT
+					// #Wanghao@BSP.Bootloader.Bootflow, 2018/04/26, add to disable A/B partition
+					fsmgr_flags = "wait,avb";
+					// #endif
 				};
 			};
+#endif
 		};
 	};
 
@@ -489,9 +506,85 @@
 		removed_region: removed_region@85fc0000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x85fc0000 0 0x2f40000>;
+			//luhongyu@BSP.Fingerprint.Basic, 2018/10/31, add to enlarge memory of tz to 60M start
+			//#ifndef VENDOR_EDIT
+			//reg = <0 0x85fc0000 0 0x2f40000>;
+			//#else
+			reg = <0 0x85fc0000 0 0x4940000>;
+			//#endif /* VENDOR_EDIT */
+			//luhongyu@BSP.Fingerprint.Basic, 2018/10/31, add to enlarge memory of tz to 60M end
 		};
 
+// #ifdef VENDOR_EDIT
+// #wanghao@BSP.Kernel.Driver, 2018/07/05, Add for enlarge memory of Modem to 150M
+		pil_camera_mem: camera_region@8ab00000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x8ab00000 0 0x500000>;
+		};
+
+		pil_modem_mem: modem_region@8b000000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x8b000000 0 0x9600000>;
+		};
+
+		pil_video_mem: pil_video_region@94600000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x94600000 0 0x500000>;
+		};
+
+		wlan_msa_mem: wlan_msa_region@94B00000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x94B00000 0 0x100000>;
+		};
+
+		pil_cdsp_mem: cdsp_regions@94C00000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x94C00000 0 0x800000>;
+		};
+
+		pil_mba_mem: pil_mba_region@0x95400000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x95400000 0 0x200000>;
+		};
+
+		pil_adsp_mem: pil_adsp_region@95600000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x95600000 0 0x1e00000>;
+		};
+
+		pil_ipa_fw_mem: ips_fw_region@0x97400000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x97400000 0 0x10000>;
+		};
+
+		pil_ipa_gsi_mem: ipa_gsi_region@0x97410000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x97410000 0 0x5000>;
+		};
+
+		pil_gpu_mem: gpu_region@0x97415000 {
+			compatible = "removed-dma-pool";
+			no-map;
+			reg = <0 0x97415000 0 0x2000>;
+		};
+
+		qseecom_mem: qseecom_region@0x9e400000 {
+			compatible = "shared-dma-pool";
+			no-map;
+			reg = <0 0x9e400000 0 0x1400000>;
+		};
+
+// #else /* VENDOR_EDIT */
+/*
 		pil_camera_mem: camera_region@8ab00000 {
 			compatible = "removed-dma-pool";
 			no-map;
@@ -557,6 +650,8 @@
 			no-map;
 			reg = <0 0x9e400000 0 0x1400000>;
 		};
+*/
+//#endif /* VENDOR_EDIT */
 
 		adsp_mem: adsp_region {
 			compatible = "shared-dma-pool";
@@ -788,7 +883,10 @@
 			compatible = "qcom,memshare-peripheral";
 			qcom,peripheral-size = <0x500000>;
 			qcom,client-id = <1>;
-			qcom,allocate-boot-time;
+/*ifndef VENDOR_EDIT*/
+/*Yun.Chen@PSW.NW.RF, 2018/05/18, Remove for following QC advice in 03486301.*/
+//			qcom,allocate-boot-time;
+/*endif VENDOR_EDIT */
 			label = "modem";
 		};
 	};
@@ -879,7 +977,13 @@
 
 	qcom_seecom: qseecom@86d00000 {
 		compatible = "qcom,qseecom";
-		reg = <0x86d00000 0x2200000>;
+		//luhongyu@BSP.Fingerprint.Basic, 2018/10/10, add to enlarge memory of tz to 60M start
+		//#ifndef VENDOR_EDIT
+		//reg = <0x86d00000 0x2200000>;
+		//#else
+		reg = <0x86d00000 0x03C00000>;
+		//#endif /* VENDOR_EDIT */
+		//luhongyu@BSP.Fingerprint.Basic, 2018/10/10, add to enlarge memory of tz to 60M end
 		reg-names = "secapp-region";
 		qcom,hlos-num-ce-hw-instances = <1>;
 		qcom,hlos-ce-hw-instance = <0>;
@@ -1202,7 +1306,12 @@
 		reg = <0x17980000 0x1000>;
 		reg-names = "wdt-base";
 		interrupts = <0 0 0>, <0 1 0>;
-		qcom,bark-time = <11000>;
+		//#ifdef VENDOR_EDIT
+		//wanghao@BSP.Bootloader.Bootflow, 2018/05/05, Modify for bark time to 20s
+		//qcom,bark-time = <11000>;
+		//#else
+		qcom,bark-time = <20000>;
+		//#endif
 		qcom,pet-time = <9360>;
 		qcom,ipi-ping;
 		qcom,wakeup-enable;
@@ -1888,7 +1997,10 @@
 		ufs-qcom-crypto = <&ufs_ice>;
 
 		lanes-per-direction = <1>;
-		spm-level = <5>;
+	//#ifdef VENDOR_EDIT
+	//PengNan@BSP.Power.Basic,remove ufs and emmc compatibility for standby current, 2019/07/30
+	//	spm-level = <5>;
+	//#endif /*VENDOR_EDIT*/
 		dev-ref-clk-freq = <0>; /* 19.2 MHz */
 
 		clock-names =
@@ -1902,7 +2014,12 @@
 			"rx_lane0_sync_clk";
 		clocks =
 			<&clock_gcc GCC_UFS_PHY_AXI_HW_CTL_CLK>,
-			<&clock_gcc UFS_PHY_AXI_UFS_VOTE_CLK>,
+		//#ifndef VENDOR_EDIT
+		//PengNan@BSP.Power.Basic,remove ufs and emmc compatibility for standby current, 2019/07/30
+		//	<&clock_gcc UFS_PHY_AXI_UFS_VOTE_CLK>,
+		//#else
+			<&clock_gcc GCC_AGGRE_UFS_PHY_AXI_HW_CTL_CLK>,
+		//#endif
 			<&clock_gcc GCC_UFS_PHY_AHB_CLK>,
 			<&clock_gcc GCC_UFS_PHY_UNIPRO_CORE_HW_CTL_CLK>,
 			<&clock_gcc GCC_UFS_PHY_ICE_CORE_HW_CTL_CLK>,
@@ -2011,6 +2128,20 @@
 		qcom,client-id = <0x00000001>;
 		qcom,guard-memory;
 	};
+
+    //#ifdef VENDOR_EDIT
+    //Zhengpeng.Tan@NW.AP.NV.892767, 2016/11/30
+    //#ifdef FEATURE_OPPO_NV_BACKUP
+    //add for creating a shared memory with uio for nv backup and restore
+    qcom,oembackup_sharedmem@0 {
+        compatible = "qcom,sharedmem-uio";
+        reg = <0x0 0x00100000>;
+        reg-names = "oembackup";
+        qcom,client-id = <0x00000004>;
+        qcom,guard-memory;
+    };
+    //#endif /* FEATURE_OPPO_NV_BACKUP */
+    //#endif /* VENDOR_EDIT */
 
 	qcom,msm_gsi {
 		compatible = "qcom,msm_gsi";
@@ -2407,7 +2538,12 @@
 		clocks = <&clock_gcc GCC_SDCC1_AHB_CLK>,
 			<&clock_gcc GCC_SDCC1_APPS_CLK>,
 			<&clock_gcc GCC_SDCC1_ICE_CORE_CLK>,
-			<&clock_gcc UFS_PHY_AXI_EMMC_VOTE_CLK>;
+		//#ifndef VENDOR_EDIT
+		//PengNan@BSP.Power.Basic,remove ufs and emmc compatibility for standby current, 2019/07/30
+		//	<&clock_gcc UFS_PHY_AXI_EMMC_VOTE_CLK>;
+		//#else
+			<&clock_gcc GCC_AGGRE_UFS_PHY_AXI_CLK>;
+		//#endif
 		clock-names = "iface_clk", "core_clk", "ice_core_clk",
 			"bus_aggr_clk";
 
