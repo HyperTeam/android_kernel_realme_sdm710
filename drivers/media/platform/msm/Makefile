@@ -9,7 +9,7 @@ obj-y += sde/
 ifeq ($(CONFIG_SPECTRA2_CAMERA), y)
 obj-$(CONFIG_SPECTRA_CAMERA) += camera_v3/
 else
-obj-$(CONFIG_SPECTRA_CAMERA) += camera/
+obj-$(CONFIG_SPECTRA_CAMERA) += camera_oppo/
 endif
 obj-$(CONFIG_MSMB_CAMERA) += camera_v2/
 obj-y += broadcast/
