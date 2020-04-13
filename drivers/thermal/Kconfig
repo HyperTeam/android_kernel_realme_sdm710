@@ -185,6 +185,12 @@ config THERMAL_EMULATION
 	  because userland can easily disable the thermal policy by simply
 	  flooding this sysfs node with low temperature values.
 
+config OSCAR_THERMAL_SHELL
+	bool "Oscar shell temp driver"
+	default y
+	help
+	  Provide three thermal zones(front, frame and back) to get real shell temp.
+
 config HISI_THERMAL
 	tristate "Hisilicon thermal driver"
 	depends on (ARCH_HISI && CPU_THERMAL && OF) || COMPILE_TEST
