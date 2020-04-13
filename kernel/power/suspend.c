@@ -33,6 +33,17 @@
 #include <linux/wakeup_reason.h>
 
 #include "power.h"
+#ifdef VENDOR_EDIT
+//Fei.Mo@BSP.Sensor 2018/06/25 modify for notify sensor suspend forward
+#include <linux/gpio.h>
+extern int slst_gpio_base_id;
+#define PROC_AWAKE_ID 12 /* 12th bit */
+#endif /* VENDOR_EDIT */
+#ifdef VENDOR_EDIT
+//Cong.Dai@psw.bsp.tp 2018/08/30 modified for stop system enter sleep before low irq handled
+#include <soc/oppo/oppo_project.h>
+__attribute__((weak)) int check_touchirq_triggered(void) {return 0;}
+#endif /* VENDOR_EDIT */
 
 const char *pm_labels[] = { "mem", "standby", "freeze", NULL };
 const char *pm_states[PM_SUSPEND_MAX];
@@ -257,12 +268,23 @@ MODULE_PARM_DESC(pm_test_delay,
 static int suspend_test(int level)
 {
 #ifdef CONFIG_PM_DEBUG
-	if (pm_test_level == level) {
-		pr_info("suspend debug: Waiting for %d second(s).\n",
-				pm_test_delay);
-		mdelay(pm_test_delay * 1000);
-		return 1;
-	}
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("%s pm_test_level:%d, level:%d\n", __func__,
+        pm_test_level, level);
+#endif /* VENDOR_EDIT */
+    if (pm_test_level == level) {
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+        pr_info("suspend debug: Waiting for %d second(s).\n",
+                pm_test_delay);
+#else
+        pr_err("suspend debug: Waiting for %d second(s).\n",
+                pm_test_delay);
+#endif                
+        mdelay(pm_test_delay * 1000);
+        return 1;
+    }
 #endif /* !CONFIG_PM_DEBUG */
 	return 0;
 }
@@ -327,9 +349,17 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	char suspend_abort[MAX_SUSPEND_ABORT_LEN];
 	int error, last_dev;
 
-	error = platform_suspend_prepare(state);
-	if (error)
-		goto Platform_finish;
+    error = platform_suspend_prepare(state);
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (error)
+        goto Platform_finish;
+#else
+    if (error) {
+        pr_info("%s platform_suspend_prepare fail\n", __func__);
+        goto Platform_finish;
+    }
+#endif /* VENDOR_EDIT */
 
 	error = dpm_suspend_late(PMSG_SUSPEND);
 	if (error) {
@@ -341,8 +371,16 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		goto Platform_finish;
 	}
 	error = platform_suspend_prepare_late(state);
-	if (error)
-		goto Devices_early_resume;
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (error)
+        goto Devices_early_resume;
+#else
+    if (error) {
+        pr_info("%s prepare late fail\n", __func__);
+        goto Devices_early_resume;
+    }
+#endif /* VENDOR_EDIT */
 
 	error = dpm_suspend_noirq(PMSG_SUSPEND);
 	if (error) {
@@ -354,12 +392,27 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		goto Platform_early_resume;
 	}
 	error = platform_suspend_prepare_noirq(state);
-	if (error)
-		goto Platform_wake;
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (error)
+        goto Platform_wake;
+#else
+    if (error) {
+        pr_info("%s prepare_noirq fail\n", __func__);
+        goto Platform_wake;
+    }
+#endif /* VENDOR_EDIT */
 
-	if (suspend_test(TEST_PLATFORM))
-		goto Platform_wake;
-
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (suspend_test(TEST_PLATFORM))
+        goto Platform_wake;
+#else
+    if (suspend_test(TEST_PLATFORM)) {
+        pr_info("%s test_platform fail\n", __func__);
+        goto Platform_wake;
+    }
+#endif /* VENDOR_EDIT */
 	/*
 	 * PM_SUSPEND_FREEZE equals
 	 * frozen processes + suspended devices + idle processors.
@@ -370,7 +423,11 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		trace_suspend_resume(TPS("machine_suspend"), state, true);
 		freeze_enter();
 		trace_suspend_resume(TPS("machine_suspend"), state, false);
-		goto Platform_wake;
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+        pr_info("%s pm_suspend_freeze\n", __func__);
+#endif /* VENDOR_EDIT */
+        goto Platform_wake;
 	}
 
 	error = disable_nonboot_cpus();
@@ -381,6 +438,18 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("%s syscore_suspend\n", __func__);
+#endif /* VENDOR_EDIT */
+
+#ifdef VENDOR_EDIT
+//Cong.Dai@psw.bsp.tp 2018/08/30 modified for stop system enter sleep before low irq handled
+    if (check_touchirq_triggered()) {
+        error = -EBUSY;
+        goto Enable_irqs;
+    }
+#endif /* VENDOR_EDIT */
 
 	error = syscore_suspend();
 	if (!error) {
@@ -401,6 +470,10 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		syscore_resume();
 	}
 
+#ifdef VENDOR_EDIT
+//Cong.Dai@psw.bsp.tp 2018/08/30 modified for stop system enter sleep before low irq handled
+ Enable_irqs:
+#endif /* VENDOR_EDIT */
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
 
@@ -431,13 +504,28 @@ int suspend_devices_and_enter(suspend_state_t state)
 	int error;
 	bool wakeup = false;
 
-	if (!sleep_state_supported(state))
-		return -ENOSYS;
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (!sleep_state_supported(state))
+        return -ENOSYS;
+#else
+    if (!sleep_state_supported(state)) {
+        pr_info("sleep_state_supported false\n");
+        return -ENOSYS;
+    }
+#endif /* VENDOR_EDIT */
 
 	error = platform_suspend_begin(state);
-	if (error)
-		goto Close;
-
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (error)
+        goto Close;
+#else
+    if (error) {
+        pr_info("%s platform_suspend_begin fail\n", __func__);
+        goto Close;
+    }
+#endif /* VENDOR_EDIT */
 	suspend_console();
 	suspend_test_start();
 	error = dpm_suspend_start(PMSG_SUSPEND);
@@ -447,13 +535,24 @@ int suspend_devices_and_enter(suspend_state_t state)
 		goto Recover_platform;
 	}
 	suspend_test_finish("suspend devices");
-	if (suspend_test(TEST_DEVICES))
-		goto Recover_platform;
-
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (suspend_test(TEST_DEVICES))
+        goto Recover_platform;
+#else
+    if (suspend_test(TEST_DEVICES)) {
+        pr_info("%s TEST_DEVICES fail\n", __func__);
+        goto Recover_platform;
+    }
+#endif /* VENDOR_EDIT */
 	do {
 		error = suspend_enter(state, &wakeup);
 	} while (!error && !wakeup && platform_suspend_again(state));
 
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("suspend_enter end, error:%d, wakeup:%d\n", error, wakeup);
+#endif /* VENDOR_EDIT */
  Resume_devices:
 	suspend_test_start();
 	dpm_resume_end(PMSG_RESUME);
@@ -484,6 +583,68 @@ static void suspend_finish(void)
 	pm_restore_console();
 }
 
+#ifdef VENDOR_EDIT
+/*xing.xiong@BSP.Kernel.Statbily, 2018/03/24, Add for speed up suspend workaround*/
+/**
+* Sync the filesystem in seperate workqueue.
+* Then check it finishing or not periodically and
+* abort if any wakeup source comes in. That can reduce
+* the wakeup latency
+*
+*/
+static bool sys_sync_completed = false;
+static void sys_sync_work_func(struct work_struct *work);
+static DECLARE_WORK(sys_sync_work, sys_sync_work_func);
+static DECLARE_WAIT_QUEUE_HEAD(sys_sync_wait);
+static void sys_sync_work_func(struct work_struct *work)
+{
+    trace_suspend_resume(TPS("sync_filesystems"), 0, true);
+    pr_info(KERN_INFO "PM: Syncing filesystems ... ");
+    sys_sync();
+    pr_cont("done.\n");
+    trace_suspend_resume(TPS("sync_filesystems"), 0, false);
+    sys_sync_completed = true;
+    wake_up(&sys_sync_wait);
+}
+
+static int sys_sync_queue(void)
+{
+    int work_status = work_busy(&sys_sync_work);
+
+    /*maybe some irq coming here before pending check*/
+    pm_wakeup_clear();
+
+    /*Check if the previous work still running.*/
+    if (!(work_status & WORK_BUSY_PENDING)) {
+        if (work_status & WORK_BUSY_RUNNING) {
+            while (wait_event_timeout(sys_sync_wait, sys_sync_completed,
+                        msecs_to_jiffies(100)) == 0) {
+                if (pm_wakeup_pending()) {
+                    pr_info("PM: Pre-Syncing abort\n");
+                    goto abort;
+                }
+            }
+            pr_info("PM: Pre-Syncing done\n");
+        }
+        sys_sync_completed = false;
+        schedule_work(&sys_sync_work);
+    }
+
+    while (wait_event_timeout(sys_sync_wait, sys_sync_completed,
+                    msecs_to_jiffies(100)) == 0) {
+        if (pm_wakeup_pending()) {
+            pr_info("PM: Syncing abort\n");
+            goto abort;
+        }
+    }
+
+    pr_info("PM: Syncing done\n");
+    return 0;
+abort:
+    return -EAGAIN;
+}
+#endif /*VENDOR_EDIT*/
+
 /**
  * enter_state - Do common work needed to enter system sleep state.
  * @state: System sleep state to enter.
@@ -505,36 +666,73 @@ static int enter_state(suspend_state_t state)
 		}
 #endif
 	} else if (!valid_state(state)) {
-		return -EINVAL;
-	}
-	if (!mutex_trylock(&pm_mutex))
-		return -EBUSY;
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+        pr_info("%s invalid_state\n", __func__);
+#endif /* VENDOR_EDIT */
+        return -EINVAL;
+    }
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (!mutex_trylock(&pm_mutex))
+        return -EBUSY;
+#else
+    if (!mutex_trylock(&pm_mutex)) {
+        pr_info("%s mutex_trylock fail\n", __func__);
+        return -EBUSY;
+    }
+#endif /* VENDOR_EDIT */
 
 	if (state == PM_SUSPEND_FREEZE)
 		freeze_begin();
 
 #ifndef CONFIG_SUSPEND_SKIP_SYNC
-	trace_suspend_resume(TPS("sync_filesystems"), 0, true);
-	pr_info("PM: Syncing filesystems ... ");
-	sys_sync();
-	pr_cont("done.\n");
-	trace_suspend_resume(TPS("sync_filesystems"), 0, false);
+#ifndef VENDOR_EDIT
+/*xing.xiong@BSP.Kernel.Statbily, 2018/03/24, Add for speed up suspend workaround*/
+    trace_suspend_resume(TPS("sync_filesystems"), 0, true);
+    pr_info("PM: Syncing filesystems ... ");
+    sys_sync();
+    pr_cont("done.\n");
+    trace_suspend_resume(TPS("sync_filesystems"), 0, false);
+#else
+    error = sys_sync_queue();
+    if (error) {
+        pr_err("%s sys_sync_queue fail\n", __func__);
+        goto Unlock;
+    }
+#endif
 #endif
 
 	pr_debug("PM: Preparing system for sleep (%s)\n", pm_states[state]);
 	pm_suspend_clear_flags();
 	error = suspend_prepare(state);
-	if (error)
-		goto Unlock;
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    if (error)
+        goto Unlock;
+#else
+    if (error) {
+        pr_info("%s suspend_prepare error:%d\n", __func__, error);
+        goto Unlock;
+    }
+#endif /* VENDOR_EDIT */
 
-	if (suspend_test(TEST_FREEZER))
-		goto Finish;
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("%s suspend_prepare success\n", __func__);
+#endif /* VENDOR_EDIT */
+    if (suspend_test(TEST_FREEZER))
+        goto Finish;
 
 	trace_suspend_resume(TPS("suspend_enter"), state, false);
 	pr_debug("PM: Suspending system (%s)\n", pm_states[state]);
 	pm_restrict_gfp_mask();
 	error = suspend_devices_and_enter(state);
 	pm_restore_gfp_mask();
+#ifdef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("%s suspend_devices_and_enter end\n", __func__);
+#endif /* VENDOR_EDIT */
 
  Finish:
 	pr_debug("PM: Finishing wakeup.\n");
@@ -551,9 +749,16 @@ static void pm_suspend_marker(char *annotation)
 
 	getnstimeofday(&ts);
 	rtc_time_to_tm(ts.tv_sec, &tm);
-	pr_info("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
-		annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic 2018/05/03 modify for power debug
+    pr_info("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
+        annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+#else
+    pr_err("PM: suspend %s %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
+        annotation, tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
+#endif /* VENDOR_EDIT */
 }
 
 /**
@@ -571,7 +776,16 @@ int pm_suspend(suspend_state_t state)
 		return -EINVAL;
 
 	pm_suspend_marker("entry");
+#ifdef VENDOR_EDIT
+//Fei.Mo@BSP.Sensor 2018/06/25 modify for notify sensor suspend forward
+    gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 0);
+    pr_err("notify adsp suspend in the beging of pm suspend before file system.\n");
+#endif /* VENDOR_EDIT */
 	error = enter_state(state);
+#ifdef VENDOR_EDIT
+        gpio_set_value(slst_gpio_base_id + PROC_AWAKE_ID, 1);
+        pr_err("notify adsp resume in the end.\n");
+#endif /* VENDOR_EDIT */
 	if (error) {
 		suspend_stats.fail++;
 		dpm_save_failed_errno(error);
