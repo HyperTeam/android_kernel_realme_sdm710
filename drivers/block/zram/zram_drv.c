@@ -40,7 +40,15 @@ static DEFINE_IDR(zram_index_idr);
 static DEFINE_MUTEX(zram_index_mutex);
 
 static int zram_major;
+#ifdef VENDOR_EDIT //YiXue.Ge@PSW.kernel.drv 20170703 modify for enable lz4 default
+#ifdef CONFIG_CRYPTO_LZ4
+static const char *default_compressor = "lz4";
+#else /*CONFIG_ZRAM_LZ4_COMPRESS*/
 static const char *default_compressor = "lzo";
+#endif /*CONFIG_ZRAM_LZ4_COMPRESS*/
+#else /*VENDOR_EDIT*/
+static const char *default_compressor = "lzo";
+#endif/*VENDOR_EDIT*/
 
 /* Module params (documentation at end) */
 static unsigned int num_devices = 1;
@@ -69,6 +77,28 @@ static void zram_slot_unlock(struct zram *zram, u32 index)
 {
 	bit_spin_unlock(ZRAM_LOCK, &zram->table[index].flags);
 }
+
+#ifdef VENDOR_EDIT
+static struct zram *zram_default = NULL;
+unsigned long zram_comp_ratio(void)
+{
+    unsigned long compr_data_size = 0;
+    unsigned long orig_data_size = 0;
+    unsigned long ratio = 0;
+
+    if (!zram_default)
+        return 100;
+
+    compr_data_size = atomic64_read(&zram_default->stats.compr_data_size);
+    orig_data_size =  atomic64_read(&zram_default->stats.pages_stored) << PAGE_SHIFT;
+    
+    if (orig_data_size) {
+        ratio = (compr_data_size * 100) / orig_data_size;
+    }
+    return ratio > 0 ? ratio : 100;
+}
+EXPORT_SYMBOL_GPL(zram_comp_ratio);
+#endif
 
 static inline bool init_done(struct zram *zram)
 {
@@ -1986,6 +2016,9 @@ static int zram_add(void)
 
 	zram_debugfs_register(zram);
 	pr_info("Added device: %s\n", zram->disk->disk_name);
+#ifdef VENDOR_EDIT
+    zram_default = zram;
+#endif
 	return device_id;
 
 out_free_queue:
