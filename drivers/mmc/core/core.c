@@ -4510,6 +4510,7 @@ EXPORT_SYMBOL(mmc_flush_detect_work);
 void mmc_rescan(struct work_struct *work)
 {
 	unsigned long flags;
+        unsigned int i;
 	struct mmc_host *host =
 		container_of(work, struct mmc_host, detect.work);
 
@@ -4571,7 +4572,10 @@ void mmc_rescan(struct work_struct *work)
 		mmc_release_host(host);
 		goto out;
 	}
-	mmc_rescan_try_freq(host, host->f_min);
+        for (i = 0; i < ARRAY_SIZE(freqs); i++) {
+        if (!mmc_rescan_try_freq(host, max(freqs[i], host->f_min)))
+              break;
+        }
 	host->err_stats[MMC_ERR_CMD_TIMEOUT] = 0;
 	mmc_release_host(host);
 
@@ -4610,8 +4614,12 @@ void mmc_stop_host(struct mmc_host *host)
 		disable_irq(host->slot.cd_irq);
 
 	host->rescan_disable = 1;
+#ifndef VENDOR_EDIT
+/*xing.xiogn@BSP.Kernel.Stabilit, 2018/03/13, Modify for system server hung*/
 	cancel_delayed_work_sync(&host->detect);
-
+#else /*VENDOR_EDIT*/
+	cancel_delayed_work(&host->detect);
+#endif /*VENDOR_EDIT*/
 	/* clear pm flags now and let card drivers set them as needed */
 	host->pm_flags = 0;
 
