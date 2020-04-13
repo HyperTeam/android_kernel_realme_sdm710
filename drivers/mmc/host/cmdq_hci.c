@@ -30,6 +30,13 @@
 #include "sdhci.h"
 #include "sdhci-msm.h"
 
+#if defined(VENDOR_EDIT) && defined(CONFIG_OPPO_HEALTHINFO)
+// wenbin.liu@PSW.BSP.MM, 2018/08/06
+// Add for record emmc  driver iowait
+#include <soc/oppo/oppo_healthinfo.h>
+#include <linux/cred_oppo.h>
+#endif /*VENDOR_EDIT*/
+
 #define DCMD_SLOT 31
 #define NUM_SLOTS 32
 
@@ -926,6 +933,13 @@ static void cmdq_finish_data(struct mmc_host *mmc, unsigned int tag)
 	mrq->done(mrq);
 }
 
+#if defined(VENDOR_EDIT) && defined(CONFIG_OPPO_HEALTHINFO)
+// wenbin.liu@PSW.BSP.MM, 2018/08/06
+// Add for record  emmc  driver iowait
+extern void ohm_schedstats_record(int sched_type, int fg, u64 delta_ms);
+extern int ohm_flash_type;
+#endif /*VENDOR_EDIT*/
+
 irqreturn_t cmdq_irq(struct mmc_host *mmc, int err, bool is_cmd_err)
 {
 	u32 status;
@@ -1182,6 +1196,14 @@ skip_cqterri:
 					mrq->cmdq_req->resp_err ||
 					(mrq->data && mrq->data->error))) {
 				/* complete the corresponding mrq */
+#if defined(VENDOR_EDIT) && defined(CONFIG_OPPO_HEALTHINFO)
+// wenbin.liu@PSW.BSP.MM, 2018/08/06
+// Add for record emmc driver io wait
+                if (OHM_FLASH_TYPE_EMC == ohm_flash_type) {
+                    ohm_schedstats_record(OHM_SCHED_EMMCIO, current_is_fg(),
+                    ktime_ms_delta(ktime_get(), mrq->cmdq_request_time_start));
+                }
+#endif /*VENDOR_EDIT*/
 				pr_debug("%s: completing tag -> %lu\n",
 					 mmc_hostname(mmc), tag);
 				MMC_TRACE(mmc, "%s: completing tag -> %lu\n",
