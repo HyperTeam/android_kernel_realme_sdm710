@@ -1445,3 +1445,5 @@ config TOUCHSCREEN_EKTF3XXX_CHIPSET
 		  If unusre, say N.
 
 endif
+
+source "drivers/input/touchscreen/oppo_touchscreen/Kconfig"
