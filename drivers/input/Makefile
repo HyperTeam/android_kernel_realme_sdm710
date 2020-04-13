@@ -35,3 +35,4 @@ obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
 obj-$(CONFIG_INPUT_KEYCOMBO)	+= keycombo.o
 obj-$(CONFIG_SMI130)   += sensors/smi130/
 obj-y += misc/oppo_seccommon_drivers/
+obj-$(CONFIG_OPPO_FINGERPRINT)  += misc/oppo_fp_drivers/
