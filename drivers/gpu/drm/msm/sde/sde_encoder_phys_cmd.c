@@ -503,7 +503,12 @@ static int _sde_encoder_phys_cmd_handle_ppdone_timeout(
 		cmd_enc->pp_timeout_report_cnt = PP_TIMEOUT_MAX_TRIALS;
 		frame_event |= SDE_ENCODER_FRAME_EVENT_PANEL_DEAD;
 
+#ifndef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.Lcd.Stability, 2018/9/26,add for sove crash issue when esd testing, we think no need to crash here*/
 		SDE_DBG_DUMP("panic");
+#else /*VENDOR_EDIT*/
+		SDE_DBG_DUMP("all", "dbg_bus", "vbif_dbg_bus");
+#endif
 	} else if (cmd_enc->pp_timeout_report_cnt == 1) {
 		/* to avoid flooding, only log first time, and "dead" time */
 		SDE_ERROR_CMDENC(cmd_enc,
@@ -855,7 +860,12 @@ static void sde_encoder_phys_cmd_tearcheck_config(
 	 * disable sde hw generated TE signal, since hw TE will arrive first.
 	 * Only caveat is if due to error, we hit wrap-around.
 	 */
+#ifndef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.Lcd.Stability, 2018/9/26,add to solve crash issue when panel is disconnect*/
 	tc_cfg.sync_cfg_height = 0xFFF0;
+#else  /*VENDOR_EDIT*/
+	tc_cfg.sync_cfg_height = 2589;
+#endif /*VENDOR_EDIT*/
 	tc_cfg.vsync_init_val = mode->vdisplay;
 	tc_cfg.sync_threshold_start = DEFAULT_TEARCHECK_SYNC_THRESH_START;
 	tc_cfg.sync_threshold_continue = DEFAULT_TEARCHECK_SYNC_THRESH_CONTINUE;

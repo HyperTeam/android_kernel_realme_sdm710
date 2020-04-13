@@ -512,6 +512,10 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 {
 	struct dsi_display *dsi_display;
 	struct dsi_backlight_config *bl_config;
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stable,2018/9/26 fix backlight race problem */
+	struct backlight_device *bd;
+#endif /* VENDOR_EDIT */
 	int rc = 0;
 
 	if (!c_conn) {
@@ -526,6 +530,17 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 			((dsi_display) ? dsi_display->panel : NULL));
 		return -EINVAL;
 	}
+
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stable,2018/9/26 fix backlight race problem */
+	bd = c_conn->bl_device;
+	if (!bd) {
+		SDE_ERROR("Invalid params backlight_device null\n");
+		return -EINVAL;
+	}
+
+	mutex_lock(&bd->update_lock);
+#endif /* VENDOR_EDIT */
 
 	bl_config = &dsi_display->panel->bl_config;
 
@@ -553,6 +568,11 @@ static int _sde_connector_update_bl_scale(struct sde_connector *c_conn)
 		bl_config->bl_level);
 	rc = c_conn->ops.set_backlight(dsi_display, bl_config->bl_level);
 	c_conn->unset_bl_level = 0;
+
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stable,2018/9/26 fix backlight race problem */
+	mutex_unlock(&bd->update_lock);
+#endif /* VENDOR_EDIT */
 
 	return rc;
 }
@@ -2339,6 +2359,12 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 	msm_property_install_range(&c_conn->property_info, "ad_bl_scale",
 		0x0, 0, MAX_AD_BL_SCALE_LEVEL, MAX_AD_BL_SCALE_LEVEL,
 		CONNECTOR_PROP_AD_BL_SCALE);
+
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Feature,2018/9/26 support custom propertys */
+	msm_property_install_range(&c_conn->property_info,"CONNECTOR_CUST",
+		0x0, 0, INT_MAX, 0, CONNECTOR_PROP_CUSTOM);
+#endif
 
 	c_conn->bl_scale_dirty = false;
 	c_conn->bl_scale = MAX_BL_SCALE_LEVEL;
