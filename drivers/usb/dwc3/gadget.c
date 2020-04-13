@@ -1940,6 +1940,11 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 	u32			reg, reg1;
 	u32			timeout = 1500;
 
+#ifdef VENDOR_EDIT
+    /* Yichun.Chen	PSW.BSP.CHG  2019-08-07  for detect CDP */
+    ktime_t start, diff;
+#endif
+
 	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
 	if (is_on) {
 		dbg_event(0xFF, "Pullup_enable", is_on);
@@ -1950,6 +1955,34 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 
 		if (dwc->revision >= DWC3_REVISION_194A)
 			reg &= ~DWC3_DCTL_KEEP_CONNECT;
+
+#ifdef VENDOR_EDIT
+        /* Yichun.Chen	PSW.BSP.CHG  2019-08-07  for detect CDP */
+        reg1 = dwc3_readl(dwc->regs, DWC3_DCTL);
+        if (reg1 & DWC3_DCTL_RUN_STOP) /*only restart core if run bit already been set*/
+        {
+            start = ktime_get();
+            /* issue device SoftReset */
+            dwc3_writel(dwc->regs, DWC3_DCTL, reg1 | DWC3_DCTL_CSFTRST);
+            do {
+                reg1 = dwc3_readl(dwc->regs, DWC3_DCTL);
+                if (!(reg1 & DWC3_DCTL_CSFTRST))
+                {
+                    udelay(20);
+                    break;
+                }
+
+                diff = ktime_sub(ktime_get(), start);
+                /* poll for max. 10ms */
+                if (ktime_to_ms(diff) > DWC3_SOFT_RESET_TIMEOUT) {
+                    printk_ratelimited(KERN_ERR
+                            "%s:core Reset Timed Out\n", __func__);
+                    break;
+                }
+                cpu_relax();
+            } while (true);
+        }
+#endif
 
 		dwc3_event_buffers_setup(dwc);
 		dwc3_gadget_restart(dwc);
