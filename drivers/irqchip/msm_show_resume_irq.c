@@ -14,8 +14,12 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
-
+#ifndef VENDOR_EDIT
+//Nanwei.Deng@BSP.CHG.Basic,  2018/04/28, add for reseume irq.
 int msm_show_resume_irq_mask;
+#else
+int msm_show_resume_irq_mask = 1;
+#endif /*VENDOR_EDIT*/
 
 module_param_named(
 	debug_mask, msm_show_resume_irq_mask, int, S_IRUGO | S_IWUSR | S_IWGRP
