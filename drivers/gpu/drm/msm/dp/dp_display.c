@@ -454,6 +454,14 @@ static void dp_display_post_open(struct dp_display *dp_display)
 	}
 
 	/* if cable is already connected, send notification */
+#ifdef VENDOR_EDIT
+/*liping-m@PSW.MM.Display.LCD.Stable,2018/9/26 fix usbpd null pointer */
+	if (!dp->usbpd) {
+		pr_err("usbpd not set\n");
+		return;
+	}
+#endif /* VENDOR_EDIT */
+
 	if (dp->usbpd->hpd_high)
 		queue_work(dp->wq, &dp->connect_work);
 	else

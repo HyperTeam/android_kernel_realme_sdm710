@@ -1569,7 +1569,12 @@ static void _sde_encoder_update_vsync_source(struct sde_encoder_virt *sde_enc,
 	struct msm_mode_info mode_info;
 	int i, rc = 0;
 
+	#ifndef VENDOR_EDIT
+	/*LiPing-m@PSW.MM.Display.LCD.Stable,2018-10-16 fix null pointer error */
+	if (!sde_enc || !disp_info) {
+	#else
 	if (!sde_enc || !sde_enc->cur_master || !disp_info) {
+	#endif /* VENDOR_EDIT */
 		SDE_ERROR("invalid param sde_enc:%d or disp_info:%d\n",
 					sde_enc != NULL, disp_info != NULL);
 		return;
@@ -2899,7 +2904,8 @@ static void sde_encoder_virt_enable(struct drm_encoder *drm_enc)
 	}
 
 	if (!(msm_is_mode_seamless_vrr(cur_mode)
-			|| msm_is_mode_seamless_dms(cur_mode)))
+			|| msm_is_mode_seamless_dms(cur_mode)
+			|| msm_is_mode_seamless_dyn_clk(cur_mode)))
 		kthread_init_delayed_work(&sde_enc->delayed_off_work,
 			sde_encoder_off_work);
 
