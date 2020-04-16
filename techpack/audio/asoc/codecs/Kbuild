@@ -199,6 +199,7 @@ endif
 ifeq ($(KERNEL_BUILD), 1)
 	obj-y	+= wcd934x/
 	obj-y	+= sdm660_cdc/
+	obj-y	+= tfa98xx/
 	obj-y	+= msm_sdw/
 endif
 # Module information used by KBuild framework
