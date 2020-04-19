@@ -505,10 +505,6 @@
 	qcom,dsi-display-active;
 };
 
-&pm660_charger {
-	qcom,ufp-only-mode;
-};
-
 &dai_mi2s3 {
 	qcom,msm-mi2s-rx-lines = <0>;
 	qcom,msm-mi2s-tx-lines = <1>;
