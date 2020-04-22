@@ -180,8 +180,9 @@ s32 ffsMountVol(struct super_block *sb)
 		sb_set_blocksize(sb, p_bd->sector_size);
 
 	/* read Sector 0 */
-	if (sector_read(sb, 0, &tmp_bh, 1) != FFS_SUCCESS)
+	if (sector_read(sb, 0, &tmp_bh, 1) != FFS_SUCCESS) {
 		return FFS_MEDIAERR;
+	}
 
 		p_fs->PBR_sector = 0;
 
