@@ -85,18 +85,7 @@ static int pm_qos_state = 0;
 #endif
 
 uint8_t DouTap_enable = 0;               // double tap
-uint8_t UpVee_enable  = 0;               // ^
-uint8_t DownVee_enable  = 0;             // v
-uint8_t LeftVee_enable = 0;              // <
-uint8_t RightVee_enable = 0;             // >
-uint8_t Circle_enable = 0;               // O
-uint8_t DouSwip_enable = 0;              // ||
-uint8_t Left2RightSwip_enable = 0;       // -->
-uint8_t Right2LeftSwip_enable = 0;       // <--
-uint8_t Up2DownSwip_enable = 0;          // |v
-uint8_t Down2UpSwip_enable = 0;          // |^
-uint8_t Mgestrue_enable = 0;             // M
-uint8_t Wgestrue_enable = 0;             // W
+uint8_t gesture_enable = 0;              // gestures
 
 /*******Part2:declear Area********************************/
 static void speedup_resume(struct work_struct *work);
@@ -398,51 +387,51 @@ static void tp_gesture_handle(struct touchpanel_data *ts)
 			key = KEY_DOUBLE_TAP;
 			break;
 		case UpVee:
-		        enabled = UpVee_enable;
+		        enabled = gesture_enable;
 			key = KEY_GESTURE_DOWN_ARROW;
 			break;
 		case DownVee:
-                        enabled = DownVee_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_UP_ARROW;
 			break;
 		case LeftVee:
-                        enabled = LeftVee_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_RIGHT_ARROW;
 			break;
 		case RightVee:
-                        enabled = RightVee_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_LEFT_ARROW;
 			break;
 		case Circle:
-                        enabled = Circle_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_CIRCLE;
 			break;
 		case DouSwip:
-                        enabled = DouSwip_enable ;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_TWO_SWIPE;
 			break;
 		case Left2RightSwip:
-                        enabled = Left2RightSwip_enable ;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_SWIPE_RIGHT;
 			break;
 		case Right2LeftSwip:
-                        enabled = Right2LeftSwip_enable ;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_SWIPE_LEFT;
 			break;
 		case Up2DownSwip:
-                        enabled = Up2DownSwip_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_SWIPE_DOWN;
 			break;
 		case Down2UpSwip:
-                        enabled = Down2UpSwip;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_SWIPE_UP;
 			break;
 		case Mgestrue:
-                        enabled = Mgestrue_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_M;
 			break;
 		case Wgestrue:
-                        enabled = Wgestrue_enable;
+                        enabled = gesture_enable;
 			key = KEY_GESTURE_W;
 			break;
 	}
@@ -3117,18 +3106,7 @@ static const struct file_operations proc_oppo_apk_fops = {
 	};
 
 GESTURE_ATTR(double_tap, DouTap_enable);
-GESTURE_ATTR(up_arrow, UpVee_enable);
-GESTURE_ATTR(down_arrow, DownVee_enable);
-GESTURE_ATTR(left_arrow, LeftVee_enable);
-GESTURE_ATTR(right_arrow, RightVee_enable);
-GESTURE_ATTR(double_swipe, DouSwip_enable);
-GESTURE_ATTR(up_swipe, Up2DownSwip_enable);
-GESTURE_ATTR(down_swipe, Down2UpSwip_enable);
-GESTURE_ATTR(left_swipe, Left2RightSwip_enable);
-GESTURE_ATTR(right_swipe, Right2LeftSwip_enable);
-GESTURE_ATTR(letter_o, Circle_enable);
-GESTURE_ATTR(letter_w, Wgestrue_enable);
-GESTURE_ATTR(letter_m, Mgestrue_enable);
+GESTURE_ATTR(gesture, gesture_enable);
 
 #define CREATE_PROC_NODE(PARENT, NAME, MODE) \
 	prEntry_tmp = proc_create(#NAME, MODE, PARENT, &NAME##_proc_fops); \
@@ -3209,18 +3187,7 @@ static int init_touchpanel_proc(struct touchpanel_data *ts)
     //proc files-step2-4:/proc/touchpanel/double_tap_enable (black gesture related interface)
     if (ts->black_gesture_support) {
         CREATE_GESTURE_NODE(double_tap);
-        CREATE_GESTURE_NODE(up_arrow);
-        CREATE_GESTURE_NODE(down_arrow);
-        CREATE_GESTURE_NODE(left_arrow);
-        CREATE_GESTURE_NODE(right_arrow);
-        CREATE_GESTURE_NODE(double_swipe);
-        CREATE_GESTURE_NODE(up_swipe);
-        CREATE_GESTURE_NODE(down_swipe);
-        CREATE_GESTURE_NODE(left_swipe);
-        CREATE_GESTURE_NODE(right_swipe);
-        CREATE_GESTURE_NODE(letter_o);
-        CREATE_GESTURE_NODE(letter_w);
-        CREATE_GESTURE_NODE(letter_m);
+        CREATE_GESTURE_NODE(gesture);
         prEntry_tmp = proc_create_data("coordinate", 0444, prEntry_tp, &proc_coordinate_fops, ts);
         if (prEntry_tmp == NULL) {
             ret = -ENOMEM;
