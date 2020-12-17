@@ -142,6 +142,7 @@
 #include "enet.h"
 #include <cdp_txrx_cmn_struct.h>
 #include <dp_txrx.h>
+#include <dp_rx_thread.h>
 #include "wlan_hdd_sysfs.h"
 #include "wlan_disa_ucfg_api.h"
 #include "wlan_disa_obj_mgmt_api.h"
@@ -3109,34 +3110,6 @@ int hdd_assemble_rate_code(uint8_t preamble, uint8_t nss, uint8_t rate)
 	return set_value;
 }
 
-#ifdef FEATURE_WLAN_WAPI
-/**
- * hdd_wapi_security_sta_exist() - return wapi security sta exist or not
- *
- * This API returns the wapi security station exist or not
- *
- * Return: true - wapi security station exist
- */
-static bool hdd_wapi_security_sta_exist(void)
-{
-	struct hdd_adapter *adapter = NULL;
-	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
-
-	hdd_for_each_adapter(hdd_ctx, adapter) {
-		if ((adapter->device_mode == QDF_STA_MODE) &&
-		    adapter->wapi_info.wapi_mode &&
-		    (adapter->wapi_info.wapi_auth_mode != WAPI_AUTH_MODE_OPEN))
-			return true;
-	}
-	return false;
-}
-#else
-static bool hdd_wapi_security_sta_exist(void)
-{
-	return false;
-}
-#endif
-
 #ifdef FEATURE_WLAN_MCC_TO_SCC_SWITCH
 static enum policy_mgr_con_mode wlan_hdd_get_mode_for_non_connected_vdev(
 			struct wlan_objmgr_psoc *psoc, uint8_t vdev_id)
@@ -3209,8 +3182,6 @@ static void hdd_register_policy_manager_callback(
 	hdd_cbacks.get_mode_for_non_connected_vdev =
 		wlan_hdd_get_mode_for_non_connected_vdev;
 	hdd_cbacks.hdd_get_device_mode = hdd_get_device_mode;
-	hdd_cbacks.hdd_wapi_security_sta_exist =
-		hdd_wapi_security_sta_exist;
 	hdd_cbacks.hdd_is_chan_switch_in_progress =
 				hdd_is_chan_switch_in_progress;
 	hdd_cbacks.hdd_is_cac_in_progress =
@@ -4929,10 +4900,6 @@ hdd_alloc_station_adapter(struct hdd_context *hdd_ctx, tSirMacAddr mac_addr,
 		goto free_net_dev;
 	}
 
-	qdf_status = hdd_adapter_feature_update_work_init(adapter);
-	if (QDF_IS_STATUS_ERROR(qdf_status))
-		goto free_net_dev;
-
 	init_completion(&adapter->vdev_destroy_event);
 
 	adapter->offloads_configured = false;
@@ -5549,7 +5516,6 @@ static void hdd_cleanup_adapter(struct hdd_context *hdd_ctx,
 		hdd_sysfs_destroy_adapter_root_obj(adapter);
 
 	hdd_debugfs_exit(adapter);
-	hdd_adapter_feature_update_work_deinit(adapter);
 
 	/*
 	 * The adapter is marked as closed. When hdd_wlan_exit() call returns,
@@ -6289,7 +6255,11 @@ struct hdd_adapter *hdd_open_adapter(struct hdd_context *hdd_ctx, uint8_t sessio
 		return NULL;
 	}
 
-	adapter->upgrade_udp_qos_threshold = QCA_WLAN_AC_BE;
+	status = hdd_adapter_feature_update_work_init(adapter);
+	if (QDF_IS_STATUS_ERROR(status))
+		goto err_cleanup_adapter;
+
+	adapter->upgrade_udp_qos_threshold = QCA_WLAN_AC_BK;
 	qdf_spinlock_create(&adapter->vdev_lock);
 	qdf_atomic_init(&hdd_ctx->num_latency_critical_clients);
 
@@ -6304,33 +6274,21 @@ struct hdd_adapter *hdd_open_adapter(struct hdd_context *hdd_ctx, uint8_t sessio
 	hdd_sta_info_init(&adapter->sta_info_list);
 	hdd_sta_info_init(&adapter->cache_sta_info_list);
 
-	if (QDF_STATUS_SUCCESS == status) {
-		/* Add it to the hdd's session list. */
-		status = hdd_add_adapter_back(hdd_ctx, adapter);
-	}
+	/* Add it to the hdd's session list. */
+	status = hdd_add_adapter_back(hdd_ctx, adapter);
+	if (QDF_STATUS_SUCCESS != status)
+		goto err_destroy_adapter_features_update_work;
 
-	if (QDF_STATUS_SUCCESS != status) {
-		if (adapter) {
-			hdd_cleanup_adapter(hdd_ctx, adapter, rtnl_held);
-			adapter = NULL;
-		}
-
-		return NULL;
-	}
 	hdd_apf_context_init(adapter);
 
-	if (QDF_STATUS_SUCCESS == status) {
-		policy_mgr_set_concurrency_mode(hdd_ctx->psoc,
-			session_type);
+	policy_mgr_set_concurrency_mode(hdd_ctx->psoc, session_type);
 
-		/* Adapter successfully added. Increment the vdev count */
-		hdd_ctx->current_intf_count++;
+	/* Adapter successfully added. Increment the vdev count */
+	hdd_ctx->current_intf_count++;
 
-		hdd_debug("current_intf_count=%d",
-		       hdd_ctx->current_intf_count);
+	hdd_debug("current_intf_count=%d", hdd_ctx->current_intf_count);
 
-		hdd_check_and_restart_sap_with_non_dfs_acs();
-	}
+	hdd_check_and_restart_sap_with_non_dfs_acs();
 
 	if (QDF_STATUS_SUCCESS != hdd_debugfs_init(adapter))
 		hdd_err("Interface %s wow debug_fs init failed",
@@ -6345,6 +6303,15 @@ struct hdd_adapter *hdd_open_adapter(struct hdd_context *hdd_ctx, uint8_t sessio
 	hdd_periodic_sta_stats_init(adapter);
 
 	return adapter;
+
+err_destroy_adapter_features_update_work:
+	hdd_adapter_feature_update_work_deinit(adapter);
+
+err_cleanup_adapter:
+	if (adapter) {
+		hdd_cleanup_adapter(hdd_ctx, adapter, rtnl_held);
+		adapter = NULL;
+	}
 
 err_free_netdev:
 	if (ndev)
@@ -6362,6 +6329,7 @@ static void __hdd_close_adapter(struct hdd_context *hdd_ctx,
 	policy_mgr_clear_concurrency_mode(hdd_ctx->psoc, adapter->device_mode);
 	qdf_event_destroy(&adapter->acs_complete_event);
 	qdf_event_destroy(&adapter->peer_cleanup_done);
+	hdd_adapter_feature_update_work_deinit(adapter);
 	hdd_cleanup_adapter(hdd_ctx, adapter, rtnl_held);
 
 	if (hdd_ctx->current_intf_count != 0)
@@ -7723,9 +7691,13 @@ static void hdd_stop_p2p_go(struct hdd_adapter *adapter)
 static inline void hdd_delete_sta(struct hdd_adapter *adapter)
 {
 }
+
 #else
-static inline void hdd_stop_p2p_go(struct hdd_adapter *adapter)
+static void hdd_stop_p2p_go(struct hdd_adapter *adapter)
 {
+	hdd_debug("[SSR] send stop iface ap to supplicant");
+	cfg80211_stop_iface(adapter->hdd_ctx->wiphy, &adapter->wdev,
+			    GFP_KERNEL);
 }
 
 /**
@@ -9061,6 +9033,8 @@ static void hdd_pld_request_bus_bandwidth(struct hdd_context *hdd_ctx,
 	cpumask_t pm_qos_cpu_mask;
 	bool is_rx_pm_qos_high = false;
 	bool is_tx_pm_qos_high = false;
+	ol_txrx_soc_handle soc = cds_get_context(QDF_MODULE_ID_SOC);
+	int i;
 
 	cpumask_clear(&pm_qos_cpu_mask);
 
@@ -9082,6 +9056,14 @@ static void hdd_pld_request_bus_bandwidth(struct hdd_context *hdd_ctx,
 		if (++hdd_ctx->bus_low_vote_cnt >= bus_low_cnt_threshold)
 			qdf_atomic_set(&hdd_ctx->low_tput_gro_enable, 1);
 	} else {
+		if (qdf_atomic_read(&hdd_ctx->low_tput_gro_enable) &&
+			    hdd_ctx->enable_dp_rx_threads) {
+			/* flush pending rx pkts when LOW->IDLE */
+			hdd_debug("flush queued GRO pkts");
+			for (i = 0; i < cdp_get_num_rx_contexts(soc); i++) {
+				dp_rx_gro_flush_ind(soc, i);
+			}
+		}
 		hdd_ctx->bus_low_vote_cnt = 0;
 		qdf_atomic_set(&hdd_ctx->low_tput_gro_enable, 0);
 	}
@@ -9558,21 +9540,29 @@ void hdd_bus_bandwidth_deinit(struct hdd_context *hdd_ctx)
  *				       netdev feature update.
  * @adapter: pointer to adapter structure
  *
+ * This function assumes that the adapter pointer is always valid.
+ * So the caller shoudl always validate adapter pointer before calling
+ * this function
+ *
  * Returns: None
  */
 static inline void
 __hdd_adapter_param_update_work(struct hdd_adapter *adapter)
 {
-	struct hdd_context *hdd_ctx = WLAN_HDD_GET_CTX(adapter);
-
-	if (hdd_validate_adapter(adapter)) {
-		hdd_adapter_ops_record_event(hdd_ctx, WLAN_HDD_ADAPTER_OPS_WORK_SCHED,
-					     WLAN_INVALID_VDEV_ID);
-		hdd_err("netdev features update request for invalid adapter");
+	/**
+	 * This check is needed in case the work got scheduled after the
+	 * interface got disconnected. During disconnection, the network queues
+	 * are paused and hence should not be, mistakenly, restarted here.
+	 * There are two approaches to handle this case
+	 * 1) Flush the work during disconnection
+	 * 2) Check for connected state in work
+	 *
+	 * Since the flushing of work during disconnection will need to be
+	 * done at multiple places or entry points, instead its preferred to
+	 * check the connection state and skip the operation here.
+	 */
+	if (!hdd_adapter_is_connected_sta(adapter))
 		return;
-	}
-	hdd_adapter_ops_record_event(hdd_ctx, WLAN_HDD_ADAPTER_OPS_WORK_SCHED,
-				     adapter->vdev_id);
 
 	hdd_netdev_update_features(adapter);
 
@@ -9590,9 +9580,24 @@ __hdd_adapter_param_update_work(struct hdd_adapter *adapter)
  */
 static void hdd_adapter_param_update_work(void *arg)
 {
+	struct hdd_context *hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 	struct hdd_adapter *adapter = arg;
 	struct osif_vdev_sync *vdev_sync;
 	int errno;
+
+	if (!hdd_ctx) {
+		hdd_err("Invalid hdd context");
+		return;
+	}
+
+	hdd_adapter_ops_record_event(hdd_ctx,
+				     WLAN_HDD_ADAPTER_OPS_WORK_SCHED,
+				     WLAN_INVALID_VDEV_ID);
+
+	if (hdd_validate_adapter(adapter)) {
+		hdd_err("netdev features update request for invalid adapter");
+		return;
+	}
 
 	errno = osif_vdev_sync_op_start(adapter->dev, &vdev_sync);
 	if (errno)
@@ -9667,7 +9672,6 @@ static uint8_t *convert_level_to_string(uint32_t level)
 		return "INVAL";
 	}
 }
-
 
 /**
  * wlan_hdd_display_tx_rx_histogram() - display tx rx histogram
